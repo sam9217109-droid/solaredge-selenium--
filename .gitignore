@@ -1,0 +1,13 @@
+# Python 執行產生的暫存與快取檔
+__pycache__/
+*.pyc
+
+# 編輯器個人設定檔（不需要傳上去）
+.vscode/
+.idea/
+
+# 敏感實體資料保護
+# 這樣可以強迫 Git 忽略你電腦裡的真實資料，你只要把假資料改名成 Sites_sample.xlsx 上傳即可
+Sites.xlsx
+*全線結束*.pdf
+*.xlsx.tmp
