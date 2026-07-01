@@ -14,7 +14,6 @@
 
 本專案專為多案場維運流程所打造，底層採用 **Pipeline-based Architecture（管線化架構）** 設計，拆分為明確的 Stage 與 Step，具備高可讀性、容錯性與可擴充性：
 
-```mermaid
 flowchart TD
     A[Excel 案場清單讀取] --> B[Stage 1: Selenium 登入與頁面導覽]
     B --> C[Stage 2: Metadata Recovery / 缺失 ID 補辦]
