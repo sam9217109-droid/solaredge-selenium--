@@ -105,7 +105,7 @@ SolarEdgeInspection/
 
 網路傳輸： Requests, JSON Parsing
 
-報表引擎： FPDF (Automated PDF Generation)
+報表引擎： FPDF2 (Automated PDF Generation)
 
 ## 🚀 快速開始 (Quick Start)
 1. 安裝環境依賴
