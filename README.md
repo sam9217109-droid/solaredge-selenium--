@@ -23,6 +23,7 @@ flowchart TD
     
 🖥️ 實時自動化巡檢狀態 (Execution Screen)
 以下為系統執行自動化巡檢、觸發 CDP 底層監聽，並在偵測到資料錯配時自動啟動 Lobby fallback 機制之實時畫面（已遮蔽敏感個資）：
+
 ![Workflow](workflow.png)
 
 🧠 核心功能設計
@@ -43,6 +44,7 @@ flowchart TD
 
 📄 運維成果展示 (Inspection Report Output)
 以下為系統巡檢完畢後自動產出之雙頁 PDF 運維報表示例（已遵循企業資安規範遮蔽敏感個資）：
+
 ![Report Sample](report.png)
 
 ⚙️ 技術亮點
