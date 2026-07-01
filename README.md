@@ -1,45 +1,152 @@
-# SolarEdge 太陽能案場自動化巡檢與實時對帳系統 (Ops & QA Automation Framework)
+🚀 SolarEdge 太陽能案場自動化巡檢與資料校正系統
 
-本專案是一套基於 **Python + Selenium** 開發的智慧化自動巡檢與數據校正引擎。專為解決 SolarEdge 監控平台在管理多案場時，UI 操作繁瑣、工班因硬體異動導致序號難以追蹤、以及斷訊設備排查遲緩等實務痛點而設計。
+(Ops & QA Automation Framework)
 
-本工具不僅大幅提升了維運（Ops）的巡檢效率，更在底層導入了強健的數據清洗與防錯機制，充分展現自動化測試（QA Engine）的架構思維。
+本專案為基於 Python + Selenium + Chrome DevTools Protocol (CDP) 所打造的自動化巡檢與資料一致性校正系統，用於 SolarEdge 太陽能監控平台之多案場維運流程。
 
----
+系統主要解決以下實務問題：
 
-## 🎯 實務維運痛點 vs 自動化解決方案
+案場 ID 錯誤或缺失
+UI 操作流程繁瑣且不穩定
+前端 DOM 結構變動導致自動化失效
+Excel / API / Lobby 多來源資料不一致
+人工巡檢成本高且易錯
+📊 系統架構流程 (System Workflow)
+🔁 End-to-End Data Pipeline
+flowchart TD
+    A[Excel 案場清單] --> B[Selenium 登入 + Lobby 導覽]
+    B --> C[CDP Network Logs 擷取]
+    C --> D[API JSON 資料解析]
+    D --> E[Identity Gate 驗證機制]
+    E --> F{是否一致?}
+    F -->|Yes| G[直接進入巡檢]
+    F -->|No| H[Lobby Recovery 修復 ID]
+    H --> I[更新 runtime state + Excel]
+    I --> G
+    G --> J[設備數據分析與統計]
+    J --> K[發電基準值計算]
+    K --> L[PDF 報表生成]
+🧠 核心功能模組
+1️⃣ Identity Gate（資料一致性驗證）
 
-### ❌ 痛點一：網頁逐層點擊，載入極慢
-* **自動化解決方案**：**網址空投直達流 (Deep Linking)**
-  直接讀取 Excel 內 SiteID 進行格式化拼接，跳過大廳與圖表載入路徑，直接空投至數位孿生佈局頁面，單場切換時間**縮短 15 秒以上**。
+系統會比對：
 
-### ❌ 痛點二：前端 UI 經常改版，常規 DOM 定位時常失效
-* **自動化解決方案**：**CDP (Chrome DevTools Protocol) 底層監聽**
-  不依賴脆弱的前端網頁元素與文字撈取，直接開啟 Chrome 底層網路頻道，攔截並解碼後台實時的 JSON 數據封包，達成 100% 精準取值。
+Excel 中的 site_name / site_id
+API 回傳的實際 site name
+行為：
+一致 → 進入巡檢流程
+不一致 → 觸發 Recovery 機制
 
-### ❌ 痛點三：人工對帳極度耗時，常因「髒資料」導致系統翻車
-* **自動化解決方案**：**動態數據清洗與校正機制**
-  腳本內建強健性設計，具備自動偵測與統一地址格式、大廳盲搜自動補辦缺失 ID、並以官方權威資料源（Single Source of Truth）自動覆寫校正 Excel 數據庫。
+Recovery 流程：
 
----
+返回 Lobby
+重新搜尋案場
+取得正確 site_id
+更新 runtime state
+回寫 Excel（永久修正）
+2️⃣ CDP Network 擷取（低依賴資料來源）
 
-## 🎯 核心架構與技術亮點 (Technical Highlights)
+透過 Chrome DevTools Protocol：
 
-1. **傳輸層響應攔截 (Response Interception)**
-   * 注入 `goog:loggingPrefs` 效能監聽配置，強制捕獲全量 Network Performance Logs。繞過 SPA (單頁應用) 的渲染延遲，直接在水庫端攔截包含 `optimizers` 的核心結構數據封包，獲取最純粹、無誤差的硬體數據。
-2. **極致防線：身分錯亂引爆與自動修正機制**
-   * 針對實務上可能因 Excel 建檔錯誤、或網頁跳轉延遲導致的「到訪案場與預期不符」狀況，腳本內建防翻車機制。一旦偵測到實際案場名稱與預期不符，立即引爆安全攔截，自動清除錯誤 ID 並退回大廳重新盲搜導航，修正後落盤寫入 Excel。
-3. **資料完整性防護 (Data Integrity)**
-   * 強制將 Excel 來源端欄位全數以字串（String）型態載入 DataFrame，徹底杜絕 Pandas 預設對設備序號（如帶 0 序號）進行錯誤的數值型態轉換，防止髒資料污染管理報表。
-4. **Session 持續性設計 (Ops-Friendly)**
-   * 啟用 `detach` 模式，在自動化巡檢、資料撈取結束後保持瀏覽器開啟，允許工程師直接接管當前網頁畫面進行人工複查，完美融合自動化與人工雙重審查流程。
+攔截 network response
+解析 JSON API 資料
+避免依賴脆弱 DOM selector
 
----
+用途：
 
-## 📊 系統依賴與主流程
+設備數據
+案場 metadata
+performance logs
+3️⃣ Lobby Fallback 機制
 
-* **開發語言與套件**：Python 3.x, Selenium, Pandas, openpyxl, WebDriver Manager
-* **資料核心**：`Sites.xlsx`（自動維護與落盤的案場資料庫）
+當 API 或 URL ID 不可靠時：
 
+自動回到 Lobby
+使用搜尋功能定位案場
+從 searchSites 封包取得正確資料
+4️⃣ 資料清洗與型別控制
+site_id 強制 string 處理
+避免 Excel / Pandas 自動型別轉換
+防止 ID 前導 0 遺失
+統一資料格式寫入
+5️⃣ 報表自動生成
+
+系統會輸出 PDF 報表，包含：
+
+案場基本資訊
+發電數據統計
+異常設備標記
+維運建議
+🔁 Identity Gate + Recovery Flow
+
+完整流程如下：
+
+使用 site_id 呼叫 API
+比對 API name 與 Excel name
+若 mismatch：
+返回 Lobby
+重新搜尋案場
+取得正確 site_id
+更新 runtime state
+回寫 Excel（永久修正）
+再次驗證新 site_id
+通過後進入巡檢
+⚙️ 技術亮點
+1. Automation Layer（Selenium）
+用於流程控制與頁面導覽
+處理登入與 UI flow
+2. Data Layer（CDP + API）
+CDP：擷取 network logs
+API：取得 site metadata
+Lobby：fallback source
+3. Data Integrity System
+多來源交叉驗證
+防止錯誤 site mapping
+自動修復並寫回資料庫（Excel）
+4. Hierarchical Data Processing
+
+針對設備資料進行：
+
+分層解析
+發電統計
+異常標記
+5. Human-in-the-loop Debug Support
+支援 browser session 保留
+可人工接管 debug flow
+📊 系統實際執行畫面
+![System Workflow](workflow.png)
+
+📄 自動化報表輸出
+![Report Example](report.png)
+
+🚀 快速開始
+1. 安裝依賴
+pip install -r requirements.txt
+2. 準備 Excel
+
+需包含欄位：
+
+site_name
+site_id
+3. 執行系統
+python main.py
+🔒 資安與使用聲明
+
+本系統已移除所有真實憑證與敏感資料，僅保留流程與架構示意。實際使用需於授權環境中執行。
+
+🧾 系統總結
+
+本系統是一個：
+
+具備資料一致性校正能力的自動化巡檢與報表生成引擎
+
+核心能力包含：
+
+自動化巡檢流程
+多來源資料驗證
+錯誤 ID 自動修復
+Excel 永久同步更新
+自動化 PDF 報表生成
 ### 巡檢三大核心步驟：
 1. **第一階段 (Dynamic URL Detection)**：登入後動態偵測並重構當日數位分身（Digital-twin）的萬用網址範本。
 2. **第二階段 (Data Cleaning & ID Sync)**：掃描 Excel 缺失資料，自動發動大廳盲搜，對齊官方全名、實時 ID 與地址，完成數據清洗。
