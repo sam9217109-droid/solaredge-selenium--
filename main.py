@@ -41,7 +41,6 @@ input_file = 'Sites.xlsx'
 df_input = pd.read_excel(input_file, dtype=str)
 SITE_DEVICE_MAPS = {}
 SITE_PACKET_CONTAINER = {}
-print("============ [開始自動化巡檢] ============")
 
 
 def login_to_solaredge(driver):  # 登入SolarEdge平台
@@ -52,6 +51,7 @@ def login_to_solaredge(driver):  # 登入SolarEdge平台
     # 回傳登入完成後的大廳首頁 URL
     # =========================
 
+    print("============ [開始自動化巡檢] ============")
     driver.maximize_window()  #避免視窗過小導致UI元件未顯示
     driver.get("https://monitoring.solaredge.com/mfe/auth/")
     print("請在瀏覽器完成登入")
@@ -715,6 +715,11 @@ def fetch_site_identity(driver, site_id): #抓身份包
         # =========================
         if "application/json" not in resp.headers.get("Content-Type", ""):
             print(f"⚠️ Non-JSON response: {resp.text[:300]!r}")
+            print("Status:", resp.status_code)
+            print("Content-Type:", resp.headers.get("Content-Type"))
+            print("URL:", resp.url)
+            print("Body:")
+            print(resp.text[:500])
             return None
 
         # =========================
@@ -1946,19 +1951,30 @@ def get_site_data():
                 )
                 continue
 
+            time.sleep(5)
             # =========================
             # Step：Validate Site Identity
             # =========================
-            site_id, site_address = identity_gate(
-                driver,
-                wait,
-                home_url,
-                site_name,
-                site_id
-            )
 
-            if not site_id:
-                continue
+            # Disable identity_gate temporarily.
+
+            # Reason:
+            # SolarEdge identity API now returns 401 Unauthorized.
+            # Main workflow is unaffected because packet capture uses Chrome CDP.
+
+            # TODO:
+            # Replace identity validation with CDP packet verification.
+
+            # site_id, site_address = identity_gate(
+            #     driver,
+            #     wait,
+            #     home_url,
+            #     site_name,
+            #     site_id
+            # )
+
+            # if not site_id:
+            #     continue
 
             # =========================
             # Step：Open Site Workspace
@@ -1976,6 +1992,7 @@ def get_site_data():
 
 
             physical_packet, site_structure_packet, energy_packet = capture_site_packets(performance_logs, site_id)
+
 
             if not (physical_packet and site_structure_packet and energy_packet):
                 print("錯誤：無法取得完整封包，跳過此案場。")
@@ -2023,7 +2040,7 @@ def get_site_data():
     print("\n[全線結束] 全面巡檢與基準測試完畢")
     return collector
 if __name__ == "__main__":
-    print("\n開始執行全案場巡檢...")
+
     report_data = get_site_data()
     # 這裡用變數去接收 get_site_data 回傳的數據
 
